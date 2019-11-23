@@ -1,0 +1,282 @@
+Mateescu Cristina Ramona, 321CB
+README - tema3
+
+Folosind patternul Command, am incapsulat comenzi ca obiecte;
+Fiecare clasa implementeaza interfata Command;
+Aceasta interfata contine o singura metoda fara implementare:
+    void execute();
+
+In metoda main a clasei principale : 
+    - sunt citite pe rand comenzile 
+    - cu ajutorul singurei instante a clasei CommandFactory
+      se creeaza comanda respectiva
+    - cu ajutorul clasei CommandRun se "ruleaza" comanda 
+      *in interiorul acestei clase, metoda run() apeleaza metoda execute();
+    
+Fiecare comanda are propria implementare a metodei execute();
+Cele doua clase Files si Directory constituie sistemul de fisiere;
+    - extind clasa abstracta Entry
+    - folosim patternul Composite
+    - obiectele de tip Files reprezinta fisierele
+    - obiectele de tip Directory reprezinta Directoarele
+        * aceasta clasa contine o lista de intrari de tipul Entry
+ 
+        * contine cateva metode suplimentare : 
+
+            printSubEntries() 
+                - sunt sortate intrarile 
+                ! in clasa Entry a fost suprascrisa metoda compareTo
+                - sunt afisate intrarile cu formatul specificat in enunt
+
+            getAbsolutePath(Entry entry)
+                - metoda recursiva 
+                - returneaza calea absoluta a unei intrari 
+                
+            contine(String name)
+                - metoda ce returneaza true sau false
+                - indica daca in lista intrarilor exista intrarea cu numele "name"
+                
+            contineRecursiv(Directory dir, String name)
+                - metoda asemanatoare cu cea anterioara
+                - indica daca exista intrarea cu numele "name" 
+                  atat in lista de intrari cat si in subintrarile acestora
+                  
+            getEntry(String name)
+                - returneaza intrarea cu numele "name" sau null daca nu exista
+
+            ! metoda grepPrintSubE este explicata la Bonus1
+ 
+Clasa suplimentara Operations contine : 
+
+        - doua atribute "universale" 
+          * root - directorul radacina 
+          * directorul curent, care este actualizat in functie de comanda
+
+        - o metoda ValidPath(String path)
+ 
+          * verifica daca un path dat ca argument este o cale valida
+          * este apelata pentru Directoare
+          * in cazul unui path al unui Fisier se returneaza null
+          * initial directorul este initializat la unul dintre root, directorul curent
+          * se desparte Sirul dupa simbolul "/"
+          * se merge din director in director pana se gaseste
+            - un director invalid / un fisier - se returneaza null
+            - un director valid care este intors
+
+        - o metoda recCopyDir(Directory dirSource, Directory dirDest)
+        
+          * copiaza recursiv un Director, cu tot cu intrarile sale
+          * pentru fiecare intrare a directorului sursa 
+          * se creeaza o noua intrare in directorul destinatie
+          * in cazul fisierelor - se seteaza datele (numele,parintele)
+          * in cazul directoarelor - se apleaza metoda recursiv
+           
+ 
+Explicarea claselor comenzilor :
+
+Comenzile sunt construite pe un tipar comun : 
+        contin metoda setArgs - ce seteaza atributele cu argumentele date 
+               metoda execute - cu implementari particulare
+
+    CdCmd 
+        - contine doua atribute : 
+           * argument de tip Directory - reprezinta directorul destinatie
+           * path de tipul String      - reprezinta calea completa 
+                                         data ca argument
+        - metoda setArgs :
+           * seteaza atributul path cu calea primita ca argument
+           * seteaza atributul argument (Director) folosind un apel 
+             apeleaza ValidPath care intoarce directorul corespunzator path-ului
+                                              sau null, daca nu e valid
+                                              
+        - metoda execute :
+           * Daca directorul este null, adica path-ul a fost invalid
+             - se afiseaza mesajul corespunzator
+           * Altfel, se seteaza currentDirectory la noul director "argument"
+
+    
+    CpCmd 
+        - contine 5 atribute : 
+            * doua de tip Directory : directorul sursa si cel destinatie
+            * un String entry - intrarea ce trebuie copiata
+            * doua String-uri : caile complete ale sursei si destinatiei
+            
+        - metoda setArgs:
+            * seteaza String-urile cailor complete cu cele primite ca argument
+            * Folosind un apel ValidPath() seteaza directorul destinatie 
+            * Se face apoi parsarea sursei 
+            * Se verifica daca intrarea de copiat este directorul curent
+                                                  este calea data
+                                                  este ultimul String dupa "/"
+            * Facand aceste verificari se seteaza concomitent :
+                intrarea ce trebuie copiata
+                directorul sursa ( directorul curent, root, un alt director )
+            
+        - metoda execute:
+            * se trateaza initial erorile 
+            * metoda setArgs este construita in asa fel incat
+              daca path-urile au fost invalide
+              atributele vor fi nule
+            * se trateaza separat cazul in care intrarea este un File - Fisier
+                                                              un Director
+            * Daca este un File - se va crea o instanta noua
+                                - se vor copia atributele
+            * Daca este un Director 
+                                - se va crea o instanta noua
+                                - ne folosim de un apel al metodei recCopyDir()
+                                - pentru a copia recursiv directorul
+                                - impreuna cu intrarile sale 
+            
+    LsCmd 
+        - contine trei atribute : 
+            * argument de tipul Directory - pe care se face listarea
+            * path de tipul String - calea completa data ca argument
+            * isRecursive, boolean - este true daca apare optiunea -R
+           
+        - metoda setArgs :
+            * se initializeaza atributul "argument" la directorul curent
+            * se testeaza argumentele comenzii ls
+            * daca apare optiunea -R - se seteaza isRecursive = true
+            * se seteaza atributul "argument" - daca apare
+              se utilizeaza un apel al metodei ValidPath care va returna un director
+                                                  
+        - metoda execute :
+            * se testeaza cazul de eroare - cand path-ul dat nu este valid
+            * pentru cazul nerecursiv - se apeleaza metoda printSubEntries();
+            * pentru cazul recursiv 
+                se apeleaza metoda de printare pentru toate subDirectoarele
+                se apeleaza metoda execute() recursiv
+
+    
+    MkdirCmd
+     
+        - contine trei atribute :
+            * path de tipul Directory - unde se creeaza directorul
+            * dir de tipul String - numele directorului de creat
+            * parentPath de tipul String - calea completa a parintelui (argument)
+           
+        - metoda setArgs :
+            * Parseaza calea primita ca argument 
+            * In functie de forma ei, se seteaza calea 
+              Fie la directorul curent,fie la root, fie prin ValidPath
+            * Se seteaza numele directorului "dir" cu stringul primit
+            * Se seteaza calea parintelui eliminand numele directorului din cale
+                                           
+        - metoda execute :
+            * Se testeaza cazurile de eroare
+              In functie de valorile path-ului, parintelui
+            * Daca nu exista erori : se creeaza directorul si se actualizeaza datele
+
+    MvCmd
+        - contine 5 atribute : 
+            * doua de tip Directory : directorul sursa si cel destinatie
+            * un String entry - intrarea ce trebuie mutata
+            * doua String-uri : caile complete ale sursei si destinatiei
+           
+        - metoda setArgs :
+           * seteaza String-urile cailor complete cu cele primite ca argument
+            * Folosind un apel ValidPath() seteaza directorul destinatie 
+            * Se face apoi parsarea sursei 
+            * Se verifica daca intrarea de mutat este directorul curent
+                                                  este calea data
+                                                  este ultimul String dupa "/"
+            * Facand aceste verificari se seteaza concomitent :
+                intrarea ce trebuie mutata
+                directorul sursa ( directorul curent, root, un alt director )
+                                              
+        - metoda execute :
+            * se trateaza initial erorile 
+            * Daca nu exista erori
+                - se adauga intrarea in directorul destinatie
+                - se sterge intrarea din directorul sursa
+                - se actualizeaza parintele
+
+    PwdCmd
+        - nu contine atribute
+        - nu are metoda setArgs
+        - metoda execute:
+            * directorul curent este luat din clasa Operations
+            * este gasita calea lui absoluta printr-un apel getAbsolutePath();
+            * este afisata calea absoluta a directorului curent
+
+    RmCmd
+        - contine trei atribute :
+            * path de tip Directory - de unde se sterge intrarea
+            * entry de tip String - intrarea de eliminat
+            * fullPath de tip String - calea data ca argument
+           
+        - metoda setArgs :
+            * se seteaza fullPath cu calea primita 
+            * se parseaza calea 
+            * se separa intrarea de restul path-ului
+            * Se verifica daca intrarea de eliminat este directorul curent
+                                                  este calea data
+                                                  este ultimul String dupa "/"
+            * Facand aceste verificari se seteaza concomitent :
+                intrarea ce trebuie eliminata
+                directorul sursa ( directorul curent, root, un alt director )
+           
+                                              
+        - metoda execute :
+            * se testeaza cazul de eroare
+            * Apoi se trateaza separat cazul in care intrarea este Director/File
+            * Daca este Director :
+                - se verifica daca directorul contine in subdirectoare currentDir
+                - se elimina
+            * Daca este Fisier:
+                - se elimina
+
+
+    TouchCmd     
+        - contine trei atribute : 
+            * path de tipul Directory - unde se creeaza fisierul
+            * file de tipul String - numele fisierului de creat
+            * parentPath de tipul String - calea completa a parintelui (argument)
+           
+        - metoda setArgs :
+            * Parseaza calea primita ca argument 
+            * In functie de forma ei, se seteaza calea 
+              Fie la directorul curent,fie la root, fie prin ValidPath
+            * Se seteaza numele fisierului "file" cu stringul primit
+            * Se seteaza calea parintelui eliminand numele fisierului din cale
+           
+                                              
+        - metoda execute :
+            * Se testeaza cazurile de eroare
+              In functie de valorile path-ului, parintelui
+            * Daca nu exista erori : se creeaza fisierul si se actualizeaza datele
+           
+
+BONUS 1 :* clasa GrepCmd
+         * metoda grepPrintSubE in clasa Directory
+
+         clasa GrepCmd - asemanatoare clasei LsCmd
+            
+            - are 4 atribute : 
+                * argument de tip Directory - pe care se face listarea
+                * path de tip String - calea completa data ca argument
+                * isRecursive, boolean - daca apare sau nu optiunea -R
+                * expression de tip String - regex
+            
+            - metoda setArgs :
+                * seteaza argumentele 
+                * seteaza isRecursive = true daca printre argumente apare -R
+                * dupa "|" se afla expresia pe care se va face match
+                * atributul argument se seteaza prin apeluri ale ValidPath();
+                
+            - metoda execute :
+                * trateaza cazul de eroare
+                * daca listarea se face nerecursiv 
+                  se apeleaza metoda grepPrintSubE() (o voi explica ulterior)
+                * daca listarea e recursiva 
+                  se apeleaza metoda grepPrintSubE pentru toate intrarile
+                  apoi se apeleaza recursiv execute()
+
+        * metoda grepPrintSubE:
+            - se afla in clasa Directory
+            - este asemanatoare metodei printSubEntries
+            - se vor printa doar intrarile care fac "match" pe expression
+            - expression - este o expresie regulata primita ca argument in metoda
+                  
+                
+           
