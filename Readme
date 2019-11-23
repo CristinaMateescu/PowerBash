@@ -1,5 +1,4 @@
-Mateescu Cristina Ramona, 321CB
-README - tema3
+README 
 
 Folosind patternul Command, am incapsulat comenzi ca obiecte;
 Fiecare clasa implementeaza interfata Command;
